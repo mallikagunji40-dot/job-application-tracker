@@ -1,172 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JobTrack | Application Manager</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}
-header{background:#172554;color:white;padding:22px 7%;font-size:24px;font-weight:bold}
-main{max-width:1000px;margin:30px auto;padding:0 20px}
-h1{font-size:28px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:25px 0}
-.card{background:white;padding:20px;border-radius:12px;box-shadow:0 2px 10px #00008}
-.card p{color:#64748b;margin:0 0 10px}
-.card strong{font-size:28px;color:#2563eb}
-.panel{background:white;padding:22px;border-radius:12px;margin-bottom:20px}
-form,.filters{display:flex;gap:10px;flex-wrap:wrap}
-input,select,button{padding:12px;border:1px solid #dbe2ea;border-radius:8px;font-size:14px}
-input,select{flex:1;min-width:140px}
-button{background:#2563eb;color:white;border:0;cursor:pointer}
-button:hover{background:#1d4ed8}
-.application{display:flex;justify-content:space-between;align-items:center;gap:15px;border-bottom:1px solid #eee;padding:16px 0}
-.application:last-child{border:0}
-.role{font-weight:bold;font-size:17px}
-.company{color:#64748b;margin-top:5px}
-.status{padding:6px 10px;border-radius:20px;background:#e0e7ff;color:#3730a3;font-size:12px}
-.actions{display:flex;gap:8px;margin-top:8px}
-.actions button{padding:7px 10px;font-size:12px}
-.delete{background:#dc2626}
-@media(max-width:600px){.stats{grid-template-columns:1fr}.application{align-items:flex-start;flex-direction:column}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobTrack | Application Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            margin: 0;
+            padding: 30px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+        }
+        h1 { color: #2563eb; }
+        input, select, button {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+        th { background: #eff6ff; }
+    </style>
 </head>
 <body>
-<header>📋 JobTrack</header>
-<main>
-<h1>Job Application Dashboard</h1>
-<p>Organize and track your job search in one place.</p>
+    <div class="container">
+        <h1>JobTrack</h1>
+        <p>Track your job applications in one place.</p>
 
-<div class="stats">
-<div class="card"><p>Total Applications</p><strong id="total">0</strong></div>
-<div class="card"><p>Interviews</p><strong id="interviews">0</strong></div>
-<div class="card"><p>Offers</p><strong id="offers">0</strong></div>
-</div>
+        <form id="jobForm">
+            <input id="company" placeholder="Company Name" required>
+            <input id="role" placeholder="Job Role" required>
+            <select id="status">
+                <option>Applied</option>
+                <option>Interview</option>
+                <option>Offer</option>
+                <option>Rejected</option>
+            </select>
+            <button type="submit">Add Application</button>
+        </form>
 
-<section class="panel">
-<h2 id="formTitle">Add Application</h2>
-<form id="jobForm">
-<input id="role" placeholder="Job role" required>
-<input id="company" placeholder="Company name" required>
-<select id="status">
-<option>Applied</option>
-<option>Interview</option>
-<option>Offer</option>
-<option>Rejected</option>
-</select>
-<input id="date" type="date" required>
-<button type="submit">Save Application</button>
-</form>
-</section>
-
-<section class="panel">
-<h2>My Applications</h2>
-<div class="filters">
-<input id="search" placeholder="Search role or company">
-<select id="filter">
-<option value="All">All Statuses</option>
-<option>Applied</option>
-<option>Interview</option>
-<option>Offer</option>
-<option>Rejected</option>
-</select>
-</div>
-<div id="list"></div>
-</section>
-</main>
-
-<script>
-let jobs = JSON.parse(localStorage.getItem("jobs") || "[]");
-let editingId = null;
-
-const $ = id => document.getElementById(id);
-
-function save() {
-  localStorage.setItem("jobs", JSON.stringify(jobs));
-  render();
-}
-
-function render() {
-  $("total").textContent = jobs.length;
-  $("interviews").textContent =
-    jobs.filter(j => j.status === "Interview").length;
-  $("offers").textContent =
-    jobs.filter(j => j.status === "Offer").length;
-
-  const query = $("search").value.toLowerCase();
-  const filter = $("filter").value;
-
-  const filtered = jobs.filter(j =>
-    (j.role + " " + j.company).toLowerCase().includes(query) &&
-    (filter === "All" || j.status === filter)
-  );
-
-  $("list").innerHTML = filtered.length ? filtered.map(j => `
-    <div class="application">
-      <div>
-        <div class="role">${escapeHTML(j.role)}</div>
-        <div class="company">${escapeHTML(j.company)} · ${j.date}</div>
-        <div class="actions">
-          <button onclick="editJob('${j.id}')">Edit</button>
-          <button class="delete" onclick="deleteJob('${j.id}')">Delete</button>
-        </div>
-      </div>
-      <span class="status">${j.status}</span>
+        <table>
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="jobList"></tbody>
+        </table>
     </div>
-  `).join("") : "<p>No applications found.</p>";
-}
 
-function escapeHTML(value) {
-  return String(value).replace(/[&<>"']/g, c => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;",
-    '"':"&quot;", "'":"&#39;"
-  })[c]);
-}
+    <script>
+        const form = document.getElementById("jobForm");
+        const jobList = document.getElementById("jobList");
 
-$("jobForm").addEventListener("submit", e => {
-  e.preventDefault();
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
 
-  const job = {
-    id: editingId || crypto.randomUUID(),
-    role: $("role").value.trim(),
-    company: $("company").value.trim(),
-    status: $("status").value,
-    date: $("date").value
-  };
+            const company = document.getElementById("company").value;
+            const role = document.getElementById("role").value;
+            const status = document.getElementById("status").value;
 
-  if (editingId) {
-    jobs = jobs.map(j => j.id === editingId ? job : j);
-  } else {
-    jobs.unshift(job);
-  }
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${company}</td>
+                <td>${role}</td>
+                <td>${status}</td>
+                <td><button onclick="this.closest('tr').remove()">Delete</button></td>
+            `;
 
-  editingId = null;
-  $("jobForm").reset();
-  $("formTitle").textContent = "Add Application";
-  save();
-});
-
-function editJob(id) {
-  const j = jobs.find(j => j.id === id);
-  if (!j) return;
-  editingId = id;
-  $("role").value = j.role;
-  $("company").value = j.company;
-  $("status").value = j.status;
-  $("date").value = j.date;
-  $("formTitle").textContent = "Edit Application";
-  window.scrollTo({top: 0, behavior: "smooth"});
-}
-
-function deleteJob(id) {
-  if (!confirm("Delete this application?")) return;
-  jobs = jobs.filter(j => j.id !== id);
-  save();
-}
-
-$("search").addEventListener("input", render);
-$("filter").addEventListener("change", render);
-render();
-</script>
+            jobList.appendChild(row);
+            form.reset();
+        });
+    </script>
 </body>
 </html>
